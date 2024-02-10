@@ -23,7 +23,14 @@ function useProvideAuth() {
             auth,
             async authenticatedUser => {
                 console.log("useProvideAuth onAuthStateChanged - authenticatedUser", authenticatedUser);
-                setUser(authenticatedUser);
+
+                if(authenticatedUser && authenticatedUser.emailVerified) {
+                    setUser(authenticatedUser);
+                }
+                else {
+                    setUser(null);
+                }
+                
                 setLoading(false);
             }
         );

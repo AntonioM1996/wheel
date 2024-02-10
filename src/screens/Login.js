@@ -1,58 +1,83 @@
 import React, { useState } from "react";
-import { View, Text, Button, StyleSheet, ImageBackground, TextInput, TouchableOpacity } from "react-native";
+import { View, Alert, StyleSheet, ImageBackground, TextInput, TouchableOpacity, Platform } from "react-native";
 import { auth } from "../config/firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import BackgroundImage from "../../assets/wheel_icon.png";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import CustomText from "../components/CustomText";
 import CustomInput from "../components/CustomInput";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import BackgroundImage from "../../assets/app_background.jpg";
+import { PRIMARY_COLOR, FONT_FAMILY } from "../services/Utils";
 
-const Login = () => {
+const Login = ({ navigation }) => {
     const [username, setUsername] = useState();
     const [password, setPassword] = useState();
 
     const handleLoginPress = function() {
-        createUserWithEmailAndPassword(auth, "tolf96@gmail.com", "sium96").then(userCredential => {
+        signInWithEmailAndPassword(auth, username, password).then(userCredential => {
             console.log(userCredential);
+
+            if(!userCredential.user.emailVerified) {
+                auth.signOut();
+                Alert.alert("Invalid credentials", "Please check username and password.");
+            }
         }).catch(error => {
-            console.error(error);
+            Alert.alert(error.code, error.message);
         });
-    };
+    }
 
     return (
-        <View style={styles.container}>
-            <View style={styles.imageContainer}>
-                <ImageBackground resizeMode="cover" source={BackgroundImage} style={styles.image}>
-                </ImageBackground>
-            </View>
-            <View style={styles.formContainer}>
+        <ImageBackground source={BackgroundImage} style={styles.backgroundImage}>
+            <View style={styles.container}>
+                <CustomText style={styles.headerText}>Login</CustomText>
                 <View style={styles.inputBox}>
-                    <CustomInput
-                        style={styles.input}
-                        placeholder="Username"
-                        value={username}
-                        onChangeText={(text) => setUsername(text)}
-                    />
-                    <CustomInput
-                        style={styles.input}
-                        placeholder="Password"
-                        secureTextEntry={true}
-                        value={password}
-                        onChangeText={(text) => setPassword(text)}
-                    />
+                    <View style={styles.inputContainer}>
+                        <Ionicons name="person-outline" size={25} color="grey" />
+                        <TextInput 
+                            placeholder="Email"
+                            style={styles.input}
+                            onChangeText={(text) => setUsername(text)}
+                            autoCapitalize="none"
+                        />
+                    </View>
+                    <View style={styles.inputContainer}>
+                        <Ionicons name="lock-closed-outline" size={25} color="grey" />
+                        <TextInput 
+                            placeholder="Password"
+                            style={styles.input}
+                            onChangeText={(text) => setPassword(text)}
+                            secureTextEntry={true}
+                            autoCapitalize="none"
+                        />
+                    </View>
                 </View>
 
-                <TouchableOpacity>
-                    <CustomText>Login</CustomText>
+                <TouchableOpacity style={styles.button} onPress={handleLoginPress}>
+                    <CustomText style={styles.buttonTitle}>LOGIN</CustomText>
                 </TouchableOpacity>
+
+                <View style={styles.signUpTextContainer}>
+                    <CustomText>Don't have an account? </CustomText>
+                    <CustomText style={styles.signUpText} onPress={() => {navigation.navigate("Signup")}}>Sign up</CustomText>
+                </View>
             </View>
-        </View>
+        </ImageBackground>
     );
 }
 
 const styles = StyleSheet.create({
+    backgroundImage: {
+        flex: 1
+    },
+    headerText: {
+        fontSize: 50,
+        fontWeight: "bold",
+        marginBottom: 50,
+        color: PRIMARY_COLOR
+    },
     container: {
         flex: 1,
-        backgroundColor: "white"
+        padding: 30,
+        justifyContent: "center"
     },
     imageContainer: {
         flex: 1,
@@ -63,25 +88,76 @@ const styles = StyleSheet.create({
         flex: 1,
         width: 500
     },
-    formContainer: {
-        borderColor: "grey",
-        borderWidth: 3,
-        flex: 1.5,
-        borderTopLeftRadius: 50,
-        borderTopRightRadius: 50,
-        paddingHorizontal: 30
-    },
-    input: {
+    inputContainer: {
         height: 60,
         width: '100%',
-        borderColor: 'gray',
-        borderWidth: 2,
         marginBottom: 16,
-        padding: 8,
-        borderRadius: 10
+        padding: 10,
+        flexDirection: "row",
+        alignItems: "center",
+        borderRadius: 10,
+        backgroundColor: 'white',
+        ...Platform.select({
+            ios: {
+                shadowColor: 'rgba(0, 0, 0, 0.5)',
+                shadowOpacity: 0.8,
+                shadowRadius: 6,
+                shadowOffset: {
+                    height: 3,
+                    width: 3,
+                },
+            },
+            android: {
+                elevation: 5,
+            }
+        })
     },
     inputBox: {
-        marginTop: 120
+    },
+    input: {
+        marginLeft: 10,
+        fontFamily: FONT_FAMILY,
+        flex: 1
+    },
+    button: {
+        paddingVertical: 15,
+        borderRadius: 50,
+        width: 150,
+        alignSelf: "flex-end",
+        alignItems: "center",
+        backgroundColor: PRIMARY_COLOR,
+        marginTop: 20,
+        ...Platform.select({
+            ios: {
+                shadowColor: 'rgba(0, 0, 0, 0.5)',
+                shadowOpacity: 0.8,
+                shadowRadius: 6,
+                shadowOffset: {
+                    height: 3,
+                    width: 3,
+                },
+            },
+            android: {
+                elevation: 5,
+            }
+        })
+    },
+    buttonTitle: {
+        color: "white",
+        fontWeight: "bold"
+    },
+    logoImage: {
+        width: 50,
+        height: 50,
+        color: "white"
+    },
+    signUpTextContainer: {
+        marginTop: 20,
+        flexDirection: "row"
+    },
+    signUpText: {
+        color: PRIMARY_COLOR,
+        fontWeight: "bold"
     }
 });
 
