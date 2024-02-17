@@ -14,11 +14,12 @@ const Login = ({ navigation }) => {
 
     const handleLoginPress = function() {
         signInWithEmailAndPassword(auth, username, password).then(userCredential => {
-            console.log(userCredential);
-
             if(!userCredential.user.emailVerified) {
                 auth.signOut();
                 Alert.alert("Invalid credentials", "Please check username and password.");
+            }
+            else {
+                console.log('User email verified!');
             }
         }).catch(error => {
             Alert.alert(error.code, error.message);

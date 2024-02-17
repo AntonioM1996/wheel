@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { app, auth } from "../config/firebase";
+import { collection, query, where, getDocs, limit } from "firebase/firestore";
+import { app, auth, db } from "../config/firebase";
 
 const AuthContext = createContext();
 
@@ -16,6 +17,7 @@ export function AuthProvider({ children }) {
 
 function useProvideAuth() {
     const [user, setUser] = useState();
+    const [userRecord, setUserRecord] = useState();
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -26,6 +28,15 @@ function useProvideAuth() {
 
                 if(authenticatedUser && authenticatedUser.emailVerified) {
                     setUser(authenticatedUser);
+
+                    const q = query(collection(db, "users"), where("userId", "==", authenticatedUser.uid), limit(1));
+
+                    getDocs(q).then(results => {
+                        console.warn(results.docs[0].data());
+                        setUserRecord(results.docs[0].data());
+                    }).catch(error => {
+                        console.error(error);
+                    });
                 }
                 else {
                     setUser(null);
@@ -40,6 +51,7 @@ function useProvideAuth() {
 
     return {
         user,
+        userRecord,
         loading
     };
 }

@@ -1,24 +1,50 @@
 import React, { useState } from "react";
-import { View, Alert, StyleSheet, ImageBackground, TextInput, TouchableOpacity, Platform } from "react-native";
-import { auth } from "../config/firebase";
-import { createUserWithEmailAndPassword, getAuth, sendEmailVerification } from "firebase/auth";
+import { View, Alert, StyleSheet, ImageBackground, TextInput, TouchableOpacity, Platform, Image } from "react-native";
+import { auth, db, storage } from "../config/firebase";
+import { doc, addDoc, collection } from "firebase/firestore";
+import { ref, uploadString } from "firebase/storage";
+import { createUserWithEmailAndPassword, getAuth, sendEmailVerification, updateProfile } from "firebase/auth";
 import CustomText from "../components/CustomText";
 import CustomInput from "../components/CustomInput";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import BackgroundImage from "../../assets/app_background.jpg";
 import { PRIMARY_COLOR, FONT_FAMILY } from "../services/Utils";
+import * as ImagePicker from 'expo-image-picker';
 
 const Signup = ({ navigation }) => {
     const [username, setUsername] = useState();
     const [password, setPassword] = useState();
     const [confirmPassword, setConfirmPassword] = useState();
+    const [firstName, setFirstName] = useState();
+    const [lastName, setLastName] = useState();
+    const [profilePicture, setProfilePicture] = useState();
 
-    const handleSignupPress = function() {
-        if(checkPassword()) {
+    const handleSignupPress = function () {
+        if (validate()) {
             createUserWithEmailAndPassword(auth, username, password).then(userCredential => {
                 console.log(userCredential);
                 const auth = getAuth();
+                const profilePictureRef = ref(storage, "profile_pictures/" + userCredential.user.uid + ".jpg");
+                console.log("profilePictureRef", profilePictureRef);
                 sendEmailVerification(auth.currentUser);
+
+                uploadString(profilePictureRef, profilePicture.base64, "base64").then(snapshot => {
+                    console.log("snapshot", snapshot);
+                }).catch(error => {
+                    console.error(error);
+                });
+
+                updateProfile(userCredential.user, {
+                        displayName: firstName + " " + lastName
+                    });
+
+                addDoc(collection(db, "users"), {
+                    "userId": userCredential.user.uid,
+                    "firstName": firstName,
+                    "lastName": lastName,
+                    "name": firstName + " " + lastName
+                });
+
                 navigation.navigate("Login");
             }).catch(error => {
                 Alert.alert(error.code, error.message);
@@ -26,13 +52,32 @@ const Signup = ({ navigation }) => {
         }
     }
 
-    const checkPassword = function() {
-        if(password != confirmPassword) {
+    const validate = function () {
+        if (password != confirmPassword) {
             Alert.alert("Attention!", "Password different from password confirmation.");
+            return false;
+        }
+        else if (!profilePicture) {
+            Alert.alert("Attention!", "Please choose a profile picture.");
             return false;
         }
 
         return true;
+    }
+
+    const handleProfilePicturePress = function () {
+        ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+            base64: true
+        }).then(result => {
+            if (!result.canceled) {
+                console.log(result.assets[0].uri);
+                setProfilePicture(result.assets[0]);
+            }
+        })
     }
 
     return (
@@ -40,9 +85,22 @@ const Signup = ({ navigation }) => {
             <View style={styles.container}>
                 <CustomText style={styles.headerText}>Sign Up</CustomText>
                 <View style={styles.inputBox}>
+                    <View style={styles.profilePictureContainer}>
+                        {profilePicture ?
+                            <View>
+                                <Image style={styles.profilePicture} source={{ uri: profilePicture.uri }} />
+                            </View>
+                            :
+                            <View>
+                                <Ionicons style={styles.profileIcon} name="person-circle-outline" size={130} color={PRIMARY_COLOR}
+                                    onPress={handleProfilePicturePress} />
+                                <Ionicons style={styles.addIcon} name="add-circle-outline" size={30} color={PRIMARY_COLOR} />
+                            </View>
+                        }
+                    </View>
                     <View style={styles.inputContainer}>
                         <Ionicons name="person-outline" size={25} color="grey" />
-                        <TextInput 
+                        <TextInput
                             placeholder="Email"
                             style={styles.input}
                             onChangeText={(text) => setUsername(text)}
@@ -50,8 +108,24 @@ const Signup = ({ navigation }) => {
                         />
                     </View>
                     <View style={styles.inputContainer}>
+                        <Ionicons name="person-outline" size={25} color="grey" />
+                        <TextInput
+                            placeholder="First name"
+                            style={styles.input}
+                            onChangeText={(text) => setFirstName(text)}
+                        />
+                    </View>
+                    <View style={styles.inputContainer}>
+                        <Ionicons name="person-outline" size={25} color="grey" />
+                        <TextInput
+                            placeholder="Last name"
+                            style={styles.input}
+                            onChangeText={(text) => setLastName(text)}
+                        />
+                    </View>
+                    <View style={styles.inputContainer}>
                         <Ionicons name="lock-closed-outline" size={25} color="grey" />
-                        <TextInput 
+                        <TextInput
                             placeholder="Password"
                             style={styles.input}
                             onChangeText={(text) => setPassword(text)}
@@ -61,7 +135,7 @@ const Signup = ({ navigation }) => {
                     </View>
                     <View style={styles.inputContainer}>
                         <Ionicons name="lock-closed-outline" size={25} color="grey" />
-                        <TextInput 
+                        <TextInput
                             placeholder="Confirm Password"
                             style={styles.input}
                             onChangeText={(text) => setConfirmPassword(text)}
@@ -77,7 +151,7 @@ const Signup = ({ navigation }) => {
 
                 <View style={styles.signUpTextContainer}>
                     <CustomText>Already have an account? </CustomText>
-                    <CustomText style={styles.signUpText} onPress={() => {navigation.navigate("Login")}}>Log In</CustomText>
+                    <CustomText style={styles.signUpText} onPress={() => { navigation.navigate("Login") }}>Log In</CustomText>
                 </View>
             </View>
         </ImageBackground>
@@ -91,7 +165,7 @@ const styles = StyleSheet.create({
     headerText: {
         fontSize: 50,
         fontWeight: "bold",
-        marginBottom: 50,
+        marginBottom: 30,
         color: PRIMARY_COLOR
     },
     container: {
@@ -133,6 +207,7 @@ const styles = StyleSheet.create({
         })
     },
     inputBox: {
+        alignItems: "center"
     },
     input: {
         marginLeft: 10,
@@ -178,6 +253,22 @@ const styles = StyleSheet.create({
     signUpText: {
         color: PRIMARY_COLOR,
         fontWeight: "bold"
+    },
+    profileIcon: {
+
+    },
+    profilePicture: {
+        width: 130,
+        height: 130,
+        borderRadius: 100,
+    },
+    profilePictureContainer: {
+        marginBottom: 10
+    },
+    addIcon: {
+        alignSelf: "flex-end",
+        bottom: 32,
+        right: 10
     }
 });
 

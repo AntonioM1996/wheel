@@ -1,19 +1,27 @@
-import React, { useState } from "react";
-import { View, StyleSheet } from "react-native";
-import CustomText from "../components/CustomText";
+import React from "react";
+import { StyleSheet, View, Button } from "react-native";
 import { PRIMARY_COLOR } from "../services/Utils";
+import CustomText from "../components/CustomText";
 import { auth } from "../config/firebase";
-import { Button } from "react-native";
+import { useAuth } from "../hooks/useAuth";
 
-const Home = ({ navigation }) => {
+const Profile = ({ navigation }) => {
+    const user = auth.currentUser;
+    const { userRecord } = useAuth();
+
+    const handleLogoutPress = function() {
+        auth.signOut();
+    }
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <CustomText style={styles.headerText}>
-                    Wheel
+                    {userRecord.name}
                 </CustomText>
             </View>
             <View style={styles.body}>
+                <Button title="Logout" onPress={handleLogoutPress} />
             </View>
         </View>
     );
@@ -43,4 +51,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default Home;
+export default Profile;
