@@ -39,6 +39,7 @@ function useProvideAuth() {
                     });
                 }
                 else {
+                    auth.signOut();
                     setUser(null);
                 }
                 

@@ -26,7 +26,7 @@ export default {
             }
         },
         "web": {
-            "favicon": "./assets/favicon.png"
+            
         },
         extra: {
             apiKey: process.env.API_KEY,

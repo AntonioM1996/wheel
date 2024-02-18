@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Alert, StyleSheet, ImageBackground, TextInput, TouchableOpacity, Platform, Image } from "react-native";
 import { auth, db, storage } from "../config/firebase";
 import { doc, addDoc, collection } from "firebase/firestore";
-import { ref, uploadString } from "firebase/storage";
+import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import { createUserWithEmailAndPassword, getAuth, sendEmailVerification, updateProfile } from "firebase/auth";
 import CustomText from "../components/CustomText";
 import CustomInput from "../components/CustomInput";
@@ -22,30 +22,36 @@ const Signup = ({ navigation }) => {
     const handleSignupPress = function () {
         if (validate()) {
             createUserWithEmailAndPassword(auth, username, password).then(userCredential => {
-                console.log(userCredential);
-                const auth = getAuth();
-                const profilePictureRef = ref(storage, "profile_pictures/" + userCredential.user.uid + ".jpg");
-                console.log("profilePictureRef", profilePictureRef);
+                const profilePictureRef = ref(storage, "profile_pictures/" + userCredential.user.uid);
+                const profilePictureMetadata = {
+                    contentType: profilePicture.mimeType,
+                };
+    
                 sendEmailVerification(auth.currentUser);
 
-                uploadString(profilePictureRef, profilePicture.base64, "base64").then(snapshot => {
+                uploadString(profilePictureRef, profilePicture.base64, "base64", profilePictureMetadata).then(snapshot => {
                     console.log("snapshot", snapshot);
+
+                    getDownloadURL(profilePictureRef).then(downloadURL => {
+                        console.log("profile picture downloadURL", downloadURL);
+
+                        updateProfile(userCredential.user, {
+                            displayName: firstName + " " + lastName,
+                            photoURL: downloadURL
+                        }).then(result => {
+                            addDoc(collection(db, "users"), {
+                                "userId": userCredential.user.uid,
+                                "firstName": firstName,
+                                "lastName": lastName,
+                                "name": firstName + " " + lastName
+                            });
+
+                            navigation.navigate("Login");
+                        })
+                    });
                 }).catch(error => {
                     console.error(error);
                 });
-
-                updateProfile(userCredential.user, {
-                        displayName: firstName + " " + lastName
-                    });
-
-                addDoc(collection(db, "users"), {
-                    "userId": userCredential.user.uid,
-                    "firstName": firstName,
-                    "lastName": lastName,
-                    "name": firstName + " " + lastName
-                });
-
-                navigation.navigate("Login");
             }).catch(error => {
                 Alert.alert(error.code, error.message);
             });
@@ -70,11 +76,14 @@ const Signup = ({ navigation }) => {
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [4, 3],
-            quality: 1,
+            quality: 0,
             base64: true
         }).then(result => {
             if (!result.canceled) {
-                console.log(result.assets[0].uri);
+                console.log("image uri", result.assets[0].uri);
+                console.log("image size", result.assets[0].fileSize / 1000000);
+                console.log("image mimeType", result.assets[0].mimeType);
+
                 setProfilePicture(result.assets[0]);
             }
         })
