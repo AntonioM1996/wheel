@@ -1,11 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
 import CustomText from "../components/CustomText";
 import { PRIMARY_COLOR } from "../services/Utils";
 import { auth } from "../config/firebase";
 import { Button } from "react-native";
+import * as Location from "expo-location";
 
 const Home = ({ navigation }) => {
+    useEffect(() => {
+        Location.requestForegroundPermissionsAsync().then(result => {
+            console.log("POSITION PERMISSION", result);
+
+            if(result.status == "granted") {
+                Location.getCurrentPositionAsync({ }).then(location => {
+                    console.log("location", location);
+                }).catch(error => {
+                    console.error(error);
+                });
+            }
+        });
+    }, []);
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
