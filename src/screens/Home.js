@@ -2,24 +2,41 @@ import React, { useState, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
 import CustomText from "../components/CustomText";
 import { PRIMARY_COLOR } from "../services/Utils";
-import { auth } from "../config/firebase";
+import { auth, db } from "../config/firebase";
+import { updateDoc, doc } from "firebase/firestore";
 import { Button } from "react-native";
 import * as Location from "expo-location";
+import { useAuth } from "../hooks/useAuth";
 
 const Home = ({ navigation }) => {
-    useEffect(() => {
-        Location.requestForegroundPermissionsAsync().then(result => {
-            console.log("POSITION PERMISSION", result);
+    const { userRecord, setUserRecord } = useAuth();
 
-            if(result.status == "granted") {
-                Location.getCurrentPositionAsync({ }).then(location => {
-                    console.log("location", location);
-                }).catch(error => {
-                    console.error(error);
-                });
-            }
-        });
-    }, []);
+    useEffect(() => {
+        if(userRecord) {
+            console.log("userRecord", userRecord);
+            console.log("userRecord.userId", userRecord.userId);
+
+            Location.requestForegroundPermissionsAsync().then(result => {
+                console.log("POSITION PERMISSION", result);
+
+                if(result.status == "granted") {
+                    Location.getCurrentPositionAsync({ }).then(location => {
+                        console.log("location", location);
+
+                        if(userRecord && location && location.coords) {
+                            const userRecordRef = doc(db, "users", userRecord.id);
+                            updateDoc(userRecordRef, {
+                                lastPositionLongitude: location.coords.longitude,
+                                lastPositionLatitude: location.coords.latitude
+                            });
+                        }
+                    }).catch(error => {
+                        console.error(error);
+                    });
+                }
+            });
+        }
+    }, [userRecord]);
 
     return (
         <View style={styles.container}>
