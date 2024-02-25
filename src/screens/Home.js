@@ -7,6 +7,8 @@ import { updateDoc, doc } from "firebase/firestore";
 import { Button } from "react-native";
 import * as Location from "expo-location";
 import { useAuth } from "../hooks/useAuth";
+import { geohashForLocation } from "geofire-common";
+import { getUsersInRange } from "../services/Utils";
 
 const Home = ({ navigation }) => {
     const { userRecord, setUserRecord } = useAuth();
@@ -25,9 +27,15 @@ const Home = ({ navigation }) => {
 
                         if(userRecord && location && location.coords) {
                             const userRecordRef = doc(db, "users", userRecord.id);
+                            const geoHash = geohashForLocation([location.coords.latitude, location.coords.longitude]);
+
                             updateDoc(userRecordRef, {
                                 lastPositionLongitude: location.coords.longitude,
-                                lastPositionLatitude: location.coords.latitude
+                                lastPositionLatitude: location.coords.latitude,
+                                geohash: geoHash
+                            }).then(result => {
+                                const usersInRange = getUsersInRange[[location.coords.latitude, location.coords.longitude], 5 * 1000];
+                                console.log("usersInRange", usersInRange);
                             });
                         }
                     }).catch(error => {
