@@ -6,7 +6,8 @@ export const FONT_FAMILY = "Avenir Next";
 export const PRIMARY_COLOR = "#2649C2";
 export const IMAGE_QUALITY = 0.1;
 
-export const getUsersInRange = async function (center, radiusInM) {
+export const getUsersInRange = async function (center, radiusInM, excludingId) {
+    console.log("excludingId", excludingId);
     // Each item in 'bounds' represents a startAt/endAt pair. We have to issue
     // a separate query for each pair. There can be up to 9 pairs of bounds
     // depending on overlap, but in most cases there are 4.
@@ -25,7 +26,6 @@ export const getUsersInRange = async function (center, radiusInM) {
 
     // Collect all the query results together into a single list
     const snapshots = await Promise.all(promises);
-
     const matchingDocs = [];
 
     for (const snap of snapshots) {
@@ -38,11 +38,12 @@ export const getUsersInRange = async function (center, radiusInM) {
             const distanceInKm = distanceBetween([lat, lng], center);
             const distanceInM = distanceInKm * 1000;
 
-            if (distanceInM <= radiusInM) {
-                matchingDocs.push(doc);
+            if (distanceInM <= radiusInM && doc.id != excludingId) {
+                matchingDocs.push(doc.data());
             }
         }
     }
 
+    console.log("matchingDocs", matchingDocs);
     return matchingDocs;
 };

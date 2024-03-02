@@ -32,11 +32,11 @@ function useProvideAuth() {
                     const q = query(collection(db, "users"), where("userId", "==", authenticatedUser.uid), limit(1));
 
                     getDocs(q).then(results => {
-                        console.warn("useAuth - getDocs on users");
-                        console.warn(results.docs[0].data());
+                        console.log("useAuth - getDocs on users");
+                        console.log(results.docs[0].data());
                         let thisUserRecord = results.docs[0].data();
                         thisUserRecord.id = results.docs[0].id;
-                        console.warn(thisUserRecord);
+                        console.log(thisUserRecord);
                         setUserRecord(thisUserRecord);
                     }).catch(error => {
                         console.error(error);
@@ -45,6 +45,7 @@ function useProvideAuth() {
                 else {
                     auth.signOut();
                     setUser(null);
+                    setUserRecord(null);
                 }
                 
                 setLoading(false);

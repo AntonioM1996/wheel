@@ -2,6 +2,7 @@ import React from 'react';
 import { AuthProvider } from './src/hooks/useAuth';
 import RootNavigator from './src/navigators/RootNavigator';
 import { decode } from "base-64";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function App() {
     if(typeof atob === "undefined") {
@@ -10,7 +11,9 @@ export default function App() {
 
     return (
         <AuthProvider>
-            <RootNavigator />
+            <GestureHandlerRootView style={{flex: 1}}>
+                <RootNavigator />
+            </GestureHandlerRootView>
         </AuthProvider>
     );
 };

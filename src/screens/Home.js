@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 import CustomText from "../components/CustomText";
 import { PRIMARY_COLOR } from "../services/Utils";
 import { auth, db } from "../config/firebase";
@@ -9,9 +9,32 @@ import * as Location from "expo-location";
 import { useAuth } from "../hooks/useAuth";
 import { geohashForLocation } from "geofire-common";
 import { getUsersInRange } from "../services/Utils";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, runOnJS } from "react-native-reanimated";
+import { GestureDetector, Gesture } from "react-native-gesture-handler";
 
 const Home = ({ navigation }) => {
-    const { userRecord, setUserRecord } = useAuth();
+    const { userRecord } = useAuth();
+    const spinPressed = useSharedValue(false);
+    const [usersInRange, setUsersInRange] = useState();
+    const [drawnUser, setDrawnUser] = useState();
+
+    const tap = Gesture.Tap().onBegin(() => {
+        spinPressed.value = true;
+    }).onFinalize(() => {
+        spinPressed.value = false;
+        console.log("usersInRange", usersInRange);
+
+        if(usersInRange && usersInRange.length > 0) {
+            const drawnUserTmp = usersInRange[Math.floor(Math.random() * usersInRange.length)];
+            console.log("drawnUserTmp", drawnUserTmp);
+            runOnJS(setDrawnUser)(drawnUserTmp);
+        }
+    });
+
+    const animatedStyles = useAnimatedStyle(() => ({
+        transform: [{ scale: withTiming(spinPressed.value ? 1.2 : 1) }],
+        opacity: withTiming(spinPressed.value ? 0.5 : 1)
+    }));
 
     useEffect(() => {
         if(userRecord) {
@@ -33,9 +56,16 @@ const Home = ({ navigation }) => {
                                 lastPositionLongitude: location.coords.longitude,
                                 lastPositionLatitude: location.coords.latitude,
                                 geohash: geoHash
-                            }).then(result => {
-                                const usersInRange = getUsersInRange[[location.coords.latitude, location.coords.longitude], 5 * 1000];
-                                console.log("usersInRange", usersInRange);
+                            }).then(async result => {
+                                const usersInRangeTmp = await getUsersInRange(
+                                    [location.coords.latitude, location.coords.longitude], 
+                                    5 * 1000, 
+                                    userRecord.id
+                                );
+
+                                setUsersInRange(usersInRangeTmp);
+
+                                console.log("usersInRangeTmp", usersInRangeTmp);
                             });
                         }
                     }).catch(error => {
@@ -54,6 +84,15 @@ const Home = ({ navigation }) => {
                 </CustomText>
             </View>
             <View style={styles.body}>
+                <GestureDetector gesture={tap}>
+                    <Animated.View style={[styles.spinButton, animatedStyles]}>
+                        <CustomText style={styles.spinButtonText}>SPIN</CustomText>
+                    </Animated.View>
+                </GestureDetector>
+                {
+                    drawnUser &&
+                    <CustomText>{drawnUser.name}</CustomText>
+                }
             </View>
         </View>
     );
@@ -79,7 +118,22 @@ const styles = StyleSheet.create({
     },
     body: {
         flex: 1,
-        justifyContent: "center"
+        justifyContent: "center",
+        alignItems: "center"
+    },
+    spinButton: {
+        backgroundColor: PRIMARY_COLOR,
+        width: 200,
+        height: 200,
+        borderRadius: 100,
+        justifyContent: "center",
+        alignItems: "center"
+    },
+    spinButtonText: {
+        color: "white",
+        fontWeight: "bold",
+        fontSize: 40,
+        fontStyle: "italic"
     }
 });
 
