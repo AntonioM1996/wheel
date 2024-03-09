@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Alert, StyleSheet, ImageBackground, TextInput, TouchableOpacity, Platform, Image } from "react-native";
 import { auth, db, storage } from "../config/firebase";
-import { doc, addDoc, collection } from "firebase/firestore";
+import { doc, addDoc, collection, arrayUnion } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { createUserWithEmailAndPassword, getAuth, sendEmailVerification, updateProfile } from "firebase/auth";
 import CustomText from "../components/CustomText";
@@ -23,7 +23,7 @@ const Signup = ({ navigation }) => {
     const handleSignupPress = function () {
         if (validate()) {
             createUserWithEmailAndPassword(auth, username, password).then(userCredential => {
-                const profilePictureRef = ref(storage, "profile_pictures/" + userCredential.user.uid);
+                const profilePictureRef = ref(storage, "images/" + userCredential.user.uid + "/" + Date.now());
     
                 sendEmailVerification(auth.currentUser);
                 console.log("--- profilePictureBlob ---");
@@ -43,11 +43,18 @@ const Signup = ({ navigation }) => {
                                 "userId": userCredential.user.uid,
                                 "firstName": firstName,
                                 "lastName": lastName,
-                                "name": firstName + " " + lastName
+                                "name": firstName + " " + lastName,
+                                "profilePictureUrl": downloadURL
+                            });
+
+                            addDoc(collection(db, "images"), {
+                                "userId": userCredential.user.uid,
+                                "imageUrl": downloadURL,
+                                "isProfilePicture": true
                             });
 
                             navigation.navigate("Login");
-                        })
+                        });
                     });
                 }).catch(error => {
                     console.error(error);

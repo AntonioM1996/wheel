@@ -5,6 +5,7 @@ import { db } from "../config/firebase";
 export const FONT_FAMILY = "Avenir Next";
 export const PRIMARY_COLOR = "#2649C2";
 export const IMAGE_QUALITY = 0.1;
+export const SPIN_DURATION_MS = 550;
 
 export const getUsersInRange = async function (center, radiusInM, excludingId) {
     console.log("excludingId", excludingId);

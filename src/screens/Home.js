@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { View, StyleSheet } from "react-native";
 import CustomText from "../components/CustomText";
-import { PRIMARY_COLOR } from "../services/Utils";
+import { PRIMARY_COLOR, getUsersInRange, SPIN_DURATION_MS } from "../services/Utils";
 import { auth, db } from "../config/firebase";
 import { updateDoc, doc } from "firebase/firestore";
-import { Button } from "react-native";
 import * as Location from "expo-location";
 import { useAuth } from "../hooks/useAuth";
 import { geohashForLocation } from "geofire-common";
-import { getUsersInRange } from "../services/Utils";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, runOnJS } from "react-native-reanimated";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import DrawnUserCard from "./DrawnUserCard";
 
 const Home = ({ navigation }) => {
     const { userRecord } = useAuth();
@@ -18,37 +17,41 @@ const Home = ({ navigation }) => {
     const [usersInRange, setUsersInRange] = useState();
     const [drawnUser, setDrawnUser] = useState();
 
-    const tap = Gesture.Tap().onBegin(() => {
+    const longPress = Gesture.LongPress().onBegin(() => {
         spinPressed.value = true;
-    }).onFinalize(() => {
+    }).onFinalize((e, success) => {
         spinPressed.value = false;
-        console.log("usersInRange", usersInRange);
+        console.log("success", success);
 
-        if(usersInRange && usersInRange.length > 0) {
-            const drawnUserTmp = usersInRange[Math.floor(Math.random() * usersInRange.length)];
-            console.log("drawnUserTmp", drawnUserTmp);
-            runOnJS(setDrawnUser)(drawnUserTmp);
+        if (success) {
+            console.log("usersInRange", usersInRange);
+
+            if (usersInRange && usersInRange.length > 0) {
+                const drawnUserTmp = usersInRange[Math.floor(Math.random() * usersInRange.length)];
+                console.log("drawnUserTmp", drawnUserTmp);
+                runOnJS(setDrawnUser)(drawnUserTmp);
+            }
         }
-    });
+    }).minDuration(SPIN_DURATION_MS);
 
     const animatedStyles = useAnimatedStyle(() => ({
-        transform: [{ scale: withTiming(spinPressed.value ? 1.2 : 1) }],
-        opacity: withTiming(spinPressed.value ? 0.5 : 1)
+        transform: [{ scale: withTiming(spinPressed.value ? 1.2 : 1, { duration: SPIN_DURATION_MS }) }],
+        opacity: withTiming(spinPressed.value ? 0.5 : 1, { duration: SPIN_DURATION_MS }, (finished) => { spinPressed.value = false })
     }));
 
     useEffect(() => {
-        if(userRecord) {
+        if (userRecord) {
             console.log("userRecord", userRecord);
             console.log("userRecord.userId", userRecord.userId);
 
             Location.requestForegroundPermissionsAsync().then(result => {
                 console.log("POSITION PERMISSION", result);
 
-                if(result.status == "granted") {
-                    Location.getCurrentPositionAsync({ }).then(location => {
+                if (result.status == "granted") {
+                    Location.getCurrentPositionAsync({}).then(location => {
                         console.log("location", location);
 
-                        if(userRecord && location && location.coords) {
+                        if (userRecord && location && location.coords) {
                             const userRecordRef = doc(db, "users", userRecord.id);
                             const geoHash = geohashForLocation([location.coords.latitude, location.coords.longitude]);
 
@@ -58,8 +61,8 @@ const Home = ({ navigation }) => {
                                 geohash: geoHash
                             }).then(async result => {
                                 const usersInRangeTmp = await getUsersInRange(
-                                    [location.coords.latitude, location.coords.longitude], 
-                                    5 * 1000, 
+                                    [location.coords.latitude, location.coords.longitude],
+                                    5 * 1000,
                                     userRecord.id
                                 );
 
@@ -84,14 +87,14 @@ const Home = ({ navigation }) => {
                 </CustomText>
             </View>
             <View style={styles.body}>
-                <GestureDetector gesture={tap}>
+                <GestureDetector gesture={longPress}>
                     <Animated.View style={[styles.spinButton, animatedStyles]}>
                         <CustomText style={styles.spinButtonText}>SPIN</CustomText>
                     </Animated.View>
                 </GestureDetector>
                 {
                     drawnUser &&
-                    <CustomText>{drawnUser.name}</CustomText>
+                    <DrawnUserCard user={drawnUser} onClose={() => setDrawnUser(null)}></DrawnUserCard>
                 }
             </View>
         </View>
