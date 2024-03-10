@@ -94,7 +94,7 @@ const Home = ({ navigation }) => {
                 </GestureDetector>
                 {
                     drawnUser &&
-                    <DrawnUserCard user={drawnUser} onClose={() => setDrawnUser(null)}></DrawnUserCard>
+                    <DrawnUserCard navigation={navigation} user={drawnUser} onClose={() => setDrawnUser(null)}></DrawnUserCard>
                 }
             </View>
         </View>
