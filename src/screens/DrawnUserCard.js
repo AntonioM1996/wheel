@@ -34,7 +34,7 @@ const DrawnUserCard = ({ user, onClose, navigation }) => {
         console.log("user.id", user.id);
         console.log("user.profilePictureUrl", user.profilePictureUrl);
 
-        createChat(userRecord.id, user.id, userRecord.profilePictureUrl, user.profilePictureUrl);
+        createChat(userRecord, user);
         hideCard(true);
     };
 

@@ -1,11 +1,12 @@
 import { geohashQueryBounds, distanceBetween } from "geofire-common";
-import { query, collection, orderBy, startAt, endAt, getDocs, where, or, addDoc } from "firebase/firestore";
+import { query, collection, orderBy, startAt, endAt, getDocs, where, or, addDoc, Timestamp } from "firebase/firestore";
 import { db } from "../config/firebase";
 
 export const FONT_FAMILY = "Avenir Next";
 export const PRIMARY_COLOR = "#2649C2";
 export const IMAGE_QUALITY = 0.1;
 export const SPIN_DURATION_MS = 550;
+export const DEFAULT_CHAT_MESSAGE = 'Say hello!';
 
 export const getUsersInRange = async function (center, radiusInM, currentUserId) {
     console.log("excludingId", currentUserId);
@@ -75,15 +76,44 @@ export const getUsersInRange = async function (center, radiusInM, currentUserId)
     return matchingDocs;
 };
 
-export const createChat = async function(sourceUserId, targetUserId, sourceUserProfilePicUrl, targetUserProfilePicUrl) {
+export const createChat = async function(sourceUser, targetUser) {
     const today = new Date();
 
     addDoc(collection(db, "chats"), {
-        "sourceUser": sourceUserId,
-        "targetUser": targetUserId,
-        "sourceUserProfilePicUrl": sourceUserProfilePicUrl,
-        "targetUserProfilePicUrl": targetUserProfilePicUrl,
-        "createdDate": today.toUTCString(),
-        "latestMessageDate": today.toUTCString()
+        "sourceUser": sourceUser.id,
+        "targetUser": targetUser.id,
+        "sourceUserProfilePicUrl": sourceUser.profilePictureUrl,
+        "targetUserProfilePicUrl": targetUser.profilePictureUrl,
+        "createdDate": Timestamp.fromDate(today),
+        "latestMessageDate": Timestamp.fromDate(today),
+        "latestMessage": DEFAULT_CHAT_MESSAGE,
+        "sourceUserName": sourceUser.name,
+        "targetUserName": targetUser.name
     });
+}
+
+export const getChats = async function(userId) {
+    let chats = [];
+
+    const chatsRef = collection(db, "chats");
+    const chatQuery = query(
+        chatsRef, 
+        or(
+            where('sourceUser', '==', userId), 
+            where('targetUser', '==', userId)
+        )
+    );
+
+    const chatQuerySnapshot = await getDocs(chatQuery);
+
+    if(chatQuerySnapshot?.docs) {
+        for(const chatDoc of chatQuerySnapshot.docs) {
+            let thisChat = chatDoc.data();
+            thisChat.id = chatDoc.id;
+
+            chats.push(thisChat);
+        }
+    }
+
+    return chats;
 }
