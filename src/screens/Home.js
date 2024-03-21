@@ -39,6 +39,40 @@ const Home = ({ navigation }) => {
         opacity: withTiming(spinPressed.value ? 0.5 : 1, { duration: SPIN_DURATION_MS }, (finished) => { spinPressed.value = false })
     }));
 
+    const getUsersToShow = function() {
+        Location.getCurrentPositionAsync({}).then(location => {
+            console.log("location", location);
+
+            if (userRecord && location && location.coords) {
+                const userRecordRef = doc(db, "users", userRecord.id);
+                const geoHash = geohashForLocation([location.coords.latitude, location.coords.longitude]);
+
+                updateDoc(userRecordRef, {
+                    lastPositionLongitude: location.coords.longitude,
+                    lastPositionLatitude: location.coords.latitude,
+                    geohash: geoHash
+                }).then(async result => {
+                    const usersInRangeTmp = await getUsersInRange(
+                        [location.coords.latitude, location.coords.longitude],
+                        5 * 1000,
+                        userRecord.id
+                    );
+
+                    setUsersInRange(usersInRangeTmp);
+
+                    console.log("usersInRangeTmp", usersInRangeTmp);
+                });
+            }
+        }).catch(error => {
+            console.error(error);
+        });
+    };
+
+    const handleDrawnUserCardClose = async function() {
+        setDrawnUser(null);
+        getUsersToShow();
+    };
+
     useEffect(() => {
         if (userRecord) {
             console.log("userRecord", userRecord);
@@ -48,32 +82,7 @@ const Home = ({ navigation }) => {
                 console.log("POSITION PERMISSION", result);
 
                 if (result.status == "granted") {
-                    Location.getCurrentPositionAsync({}).then(location => {
-                        console.log("location", location);
-
-                        if (userRecord && location && location.coords) {
-                            const userRecordRef = doc(db, "users", userRecord.id);
-                            const geoHash = geohashForLocation([location.coords.latitude, location.coords.longitude]);
-
-                            updateDoc(userRecordRef, {
-                                lastPositionLongitude: location.coords.longitude,
-                                lastPositionLatitude: location.coords.latitude,
-                                geohash: geoHash
-                            }).then(async result => {
-                                const usersInRangeTmp = await getUsersInRange(
-                                    [location.coords.latitude, location.coords.longitude],
-                                    5 * 1000,
-                                    userRecord.id
-                                );
-
-                                setUsersInRange(usersInRangeTmp);
-
-                                console.log("usersInRangeTmp", usersInRangeTmp);
-                            });
-                        }
-                    }).catch(error => {
-                        console.error(error);
-                    });
+                    getUsersToShow();
                 }
             });
         }
@@ -94,7 +103,7 @@ const Home = ({ navigation }) => {
                 </GestureDetector>
                 {
                     drawnUser &&
-                    <DrawnUserCard navigation={navigation} user={drawnUser} onClose={() => setDrawnUser(null)}></DrawnUserCard>
+                    <DrawnUserCard navigation={navigation} user={drawnUser} onClose={handleDrawnUserCardClose}></DrawnUserCard>
                 }
             </View>
         </View>

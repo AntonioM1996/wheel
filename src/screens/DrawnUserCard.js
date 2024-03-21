@@ -24,7 +24,7 @@ const DrawnUserCard = ({ user, onClose, navigation }) => {
             runOnJS(onClose)();
 
             if(hasAccepted) {
-                runOnJS(navigation.navigate)("Messages");
+                runOnJS(navigation.navigate)("MessagesNavigator");
             }
         });
     };

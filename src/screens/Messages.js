@@ -21,6 +21,13 @@ const Messages = ({ navigation }) => {
         getUserChats();
     }, []));
 
+    const handleChatRowPress = function(chat) {
+        console.log("handleChatRowPress chat.id", chat.id);
+        navigation.navigate("Chat", {
+            chat: chat
+        });
+    }
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -32,7 +39,7 @@ const Messages = ({ navigation }) => {
                 <FlatList 
                     data={chats}
                     keyExtractor={item => item.id}
-                    renderItem={({item}) => <ChatRow chat={item} />}
+                    renderItem={({item}) => <ChatRow chat={item} onPress={handleChatRowPress} />}
                 />
             </View>
         </View>
@@ -55,7 +62,7 @@ const styles = StyleSheet.create({
         marginLeft: 20
     },
     container: {
-        flex: 1
+        flex: 1,
     },
     body: {
         flex: 1,

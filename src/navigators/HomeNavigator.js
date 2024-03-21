@@ -2,7 +2,7 @@ import React from "react";
 import Home from "../screens/Home";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { PRIMARY_COLOR, FONT_FAMILY } from "../services/Utils";
-import Messages from "../screens/Messages";
+import MessagesNavigator from "../navigators/MessagesNavigator";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Profile from "../screens/Profile";
 
@@ -16,10 +16,10 @@ const HomeNavigator = () => {
                 let iconName = focused ? "home" : "home-outline";
                 return <Ionicons name={iconName} size={size} color={color} />
             }}} />
-            <Tab.Screen name="Messages" component={Messages} options={{tabBarIcon: ({ focused, color, size }) => {
+            <Tab.Screen name="MessagesNavigator" component={MessagesNavigator} options={{tabBarIcon: ({ focused, color, size }) => {
                 let iconName = focused ? "chatbubbles" : "chatbubbles-outline";
                 return <Ionicons name={iconName} size={size} color={color} />
-            }}} />
+            }, title: "Messages"}} />
             <Tab.Screen name="Profile" component={Profile} options={{tabBarIcon: ({ focused, color, size }) => {
                 let iconName = focused ? "person" : "person-outline";
                 return <Ionicons name={iconName} size={size} color={color} />

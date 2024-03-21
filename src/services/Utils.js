@@ -4,6 +4,7 @@ import { db } from "../config/firebase";
 
 export const FONT_FAMILY = "Avenir Next";
 export const PRIMARY_COLOR = "#2649C2";
+export const GREY_COLOR = "#808080";
 export const IMAGE_QUALITY = 0.1;
 export const SPIN_DURATION_MS = 550;
 export const DEFAULT_CHAT_MESSAGE = 'Say hello!';
@@ -31,6 +32,7 @@ export const getUsersInRange = async function (center, radiusInM, currentUserId)
     const chatQuerySnapshot = await getDocs(chatQuery);
 
     chatQuerySnapshot.forEach((doc) => {
+        console.log("getUsersInRage, found chat id", doc.id);
         const docData = doc.data();
 
         if(docData.sourceUser != currentUserId) {

@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { Text, View, StyleSheet, Image, TouchableOpacity } from "react-native";
 import CustomText from "./CustomText";
 import { useAuth } from "../hooks/useAuth";
+import { GREY_COLOR, LIGHT_GREY_COLOR, PRIMARY_COLOR } from "../services/Utils";
 
-const ChatRow = ({ chat }) => {
+const ChatRow = ({ chat, onPress }) => {
     const { userRecord } = useAuth();
     const [chatPictureUrl, setChatPictureUrl] = useState();
     const [chatName, setChatName] = useState();
@@ -22,7 +23,7 @@ const ChatRow = ({ chat }) => {
     }, []);
 
     return (
-        <TouchableOpacity style={styles.container}>
+        <TouchableOpacity style={styles.container} onPress={() => {onPress(chat)}}>
             <View style={styles.imageContainer}>
                 <Image
                     source={{ uri: chatPictureUrl }}
@@ -30,8 +31,8 @@ const ChatRow = ({ chat }) => {
                 />
             </View>
             <View style={styles.chatTextContainer}>
-                <CustomText style={{ fontWeight: "bold" }}>{chatName}</CustomText>
-                <CustomText>{chat.latestMessage}</CustomText>
+                <CustomText style={{ fontWeight: "bold", color: PRIMARY_COLOR }}>{chatName}</CustomText>
+                <CustomText style={{ color: GREY_COLOR }}>{chat.latestMessage}</CustomText>
             </View>
         </TouchableOpacity>
     );
@@ -46,8 +47,8 @@ const styles = StyleSheet.create({
         paddingVertical: 10
     },
     userImage: {
-        width: 70,
-        height: 70,
+        width: 60,
+        height: 60,
         borderRadius: 100
     },
     chatTextContainer: {
