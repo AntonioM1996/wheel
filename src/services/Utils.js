@@ -1,5 +1,5 @@
 import { geohashQueryBounds, distanceBetween } from "geofire-common";
-import { query, collection, orderBy, startAt, endAt, getDocs, where, or, addDoc, Timestamp } from "firebase/firestore";
+import { query, collection, orderBy, startAt, endAt, getDocs, where, or, addDoc, Timestamp, limit } from "firebase/firestore";
 import { db } from "../config/firebase";
 
 export const FONT_FAMILY = "Avenir Next";
@@ -8,6 +8,7 @@ export const GREY_COLOR = "#808080";
 export const IMAGE_QUALITY = 0.1;
 export const SPIN_DURATION_MS = 550;
 export const DEFAULT_CHAT_MESSAGE = 'Say hello!';
+export const CHAT_MESSAGES_QUERY_LIMIT = 200;
 
 export const getUsersInRange = async function (center, radiusInM, currentUserId) {
     console.log("excludingId", currentUserId);
@@ -119,3 +120,33 @@ export const getChats = async function(userId) {
 
     return chats;
 }
+
+export const getChatMessages = async function(chatId, queryLimit) {
+    let chatMessages = [];
+
+    const chatMessagesRef = collection(db, "chatMessages");
+    const chatMessagesQuery = query(
+        chatMessagesRef, 
+        where('chatId', '==', chatId),
+        orderBy('createdDate', 'desc'),
+        limit(queryLimit)
+    );
+
+    try {
+        const chatMessagesQuerySnapshot = await getDocs(chatMessagesQuery);
+
+        if(chatMessagesQuerySnapshot?.docs) {
+            for(const chatMessageDoc of chatMessagesQuerySnapshot.docs) {
+                let thisChatMessage = chatMessageDoc.data();
+                thisChatMessage.id = chatMessageDoc.id;
+
+                chatMessages.push(thisChatMessage);
+            }
+        }
+    }
+    catch(error) {
+        console.error(error);
+    }
+
+    return chatMessages;
+};
