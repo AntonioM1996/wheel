@@ -1,11 +1,11 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useLayoutEffect } from "react";
 import { View, StyleSheet, Button, TextInput } from "react-native";
 import { GiftedChat, Send } from "react-native-gifted-chat";
 import CustomText from "../components/CustomText";
 import CustomInput from "../components/CustomInput";
 import { PRIMARY_COLOR, CHAT_MESSAGES_QUERY_LIMIT, getChatMessages, FONT_FAMILY } from "../services/Utils";
 import { useAuth } from "../hooks/useAuth";
-import { Timestamp, addDoc, collection } from "firebase/firestore";
+import { Timestamp, addDoc, collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import { db } from "../config/firebase";
 
 const Chat = ({ route, navigation }) => {
@@ -16,15 +16,31 @@ const Chat = ({ route, navigation }) => {
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState('');
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         console.log("Chat.chat", chat);
         console.log("userRecord.id", userRecord.id);
         console.log("chatHeader", chatHeader);
         console.log("targetUserAvatarUrl", targetUserAvatarUrl);
 
-        const getMessages = async function () {
+        const chatMessagesRef = collection(db, "chats", chat.id, "messages");
+        const chatMessagesQuery = query(
+            chatMessagesRef, 
+            orderBy('createdDate', 'desc'),
+            limit(CHAT_MESSAGES_QUERY_LIMIT)
+        );
+
+        const unsubscribe = onSnapshot(chatMessagesQuery, (chatMessagesQuerySnapshot) => {
             let messagesTmp = [];
-            const chatMessages = await getChatMessages(chat.id, CHAT_MESSAGES_QUERY_LIMIT);
+            const chatMessages = [];
+
+            if(chatMessagesQuerySnapshot?.docs) {
+                for(const chatMessageDoc of chatMessagesQuerySnapshot.docs) {
+                    let thisChatMessage = chatMessageDoc.data();
+                    thisChatMessage.id = chatMessageDoc.id;
+    
+                    chatMessages.push(thisChatMessage);
+                }
+            }
 
             chatMessages.forEach((chatMessage, index) => {
                 let messageUser = chatMessage.userId;
@@ -57,7 +73,7 @@ const Chat = ({ route, navigation }) => {
             });
 
             setMessages(messagesTmp);
-        };
+        });
 
         if (chatHeader == null || targetUserAvatarUrl == null) {
             if (userRecord.id != chat.targetUser) {
@@ -70,7 +86,7 @@ const Chat = ({ route, navigation }) => {
             }
         }
         else {
-            getMessages();
+            unsubscribe();
         }
     }, [chatHeader, targetUserAvatarUrl]);
 
@@ -85,7 +101,7 @@ const Chat = ({ route, navigation }) => {
 
         console.log("messages", messages);
 
-        addDoc(collection(db, "chatMessages"), {
+        addDoc(collection(db, "chats", chat.id, "messages"), {
             "userId": userRecord.id,
             "chatId": chat.id,
             "messageBody": message.text,

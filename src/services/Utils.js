@@ -1,5 +1,5 @@
 import { geohashQueryBounds, distanceBetween } from "geofire-common";
-import { query, collection, orderBy, startAt, endAt, getDocs, where, or, addDoc, Timestamp, limit } from "firebase/firestore";
+import { query, collection, orderBy, startAt, endAt, getDocs, where, or, addDoc, Timestamp, limit, onSnapshot } from "firebase/firestore";
 import { db } from "../config/firebase";
 
 export const FONT_FAMILY = "Avenir Next";
@@ -121,32 +121,31 @@ export const getChats = async function(userId) {
     return chats;
 }
 
-export const getChatMessages = async function(chatId, queryLimit) {
+export const getChatMessages = function(chatId, queryLimit) {
     let chatMessages = [];
 
-    const chatMessagesRef = collection(db, "chatMessages");
+    const chatMessagesRef = collection(db, "chats", chatId, "messages");
     const chatMessagesQuery = query(
         chatMessagesRef, 
-        where('chatId', '==', chatId),
         orderBy('createdDate', 'desc'),
         limit(queryLimit)
     );
 
     try {
-        const chatMessagesQuerySnapshot = await getDocs(chatMessagesQuery);
-
-        if(chatMessagesQuerySnapshot?.docs) {
-            for(const chatMessageDoc of chatMessagesQuerySnapshot.docs) {
-                let thisChatMessage = chatMessageDoc.data();
-                thisChatMessage.id = chatMessageDoc.id;
-
-                chatMessages.push(thisChatMessage);
+        const unsubscribe = onSnapshot(chatMessagesQuery, (chatMessagesQuerySnapshot) => {
+            if(chatMessagesQuerySnapshot?.docs) {
+                for(const chatMessageDoc of chatMessagesQuerySnapshot.docs) {
+                    let thisChatMessage = chatMessageDoc.data();
+                    thisChatMessage.id = chatMessageDoc.id;
+    
+                    chatMessages.push(thisChatMessage);
+                }
             }
-        }
+
+            return chatMessages;
+        });
     }
     catch(error) {
         console.error(error);
     }
-
-    return chatMessages;
 };
