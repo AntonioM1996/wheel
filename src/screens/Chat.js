@@ -16,7 +16,7 @@ const Chat = ({ route, navigation }) => {
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState('');
 
-    useLayoutEffect(() => {
+    useEffect(() => {
         console.log("Chat.chat", chat);
         console.log("userRecord.id", userRecord.id);
         console.log("chatHeader", chatHeader);
@@ -28,52 +28,7 @@ const Chat = ({ route, navigation }) => {
             orderBy('createdDate', 'desc'),
             limit(CHAT_MESSAGES_QUERY_LIMIT)
         );
-
-        const unsubscribe = onSnapshot(chatMessagesQuery, (chatMessagesQuerySnapshot) => {
-            let messagesTmp = [];
-            const chatMessages = [];
-
-            if(chatMessagesQuerySnapshot?.docs) {
-                for(const chatMessageDoc of chatMessagesQuerySnapshot.docs) {
-                    let thisChatMessage = chatMessageDoc.data();
-                    thisChatMessage.id = chatMessageDoc.id;
-    
-                    chatMessages.push(thisChatMessage);
-                }
-            }
-
-            chatMessages.forEach((chatMessage, index) => {
-                let messageUser = chatMessage.userId;
-                let messageUserName;
-                let messageAvatar;
-
-                if (chatMessage.userId == userRecord.id) {
-                    messageUser = 1;
-                    messageUserName = userRecord.name;
-                    messageAvatar = userRecord.profilePictureUrl;
-                }
-                else {
-                    messageUser = 2;
-                    messageUserName = chatHeader;
-                    messageAvatar = targetUserAvatarUrl;
-                }
-
-                const message = {
-                    _id: index + 1,
-                    text: chatMessage.messageBody,
-                    createdAt: (chatMessage.createdDate).toDate(),
-                    user: {
-                        _id: messageUser,
-                        name: messageUserName,
-                        avatar: targetUserAvatarUrl,
-                    },
-                }
-
-                messagesTmp.push(message);
-            });
-
-            setMessages(messagesTmp);
-        });
+        let unsubscribe;
 
         if (chatHeader == null || targetUserAvatarUrl == null) {
             if (userRecord.id != chat.targetUser) {
@@ -86,7 +41,55 @@ const Chat = ({ route, navigation }) => {
             }
         }
         else {
-            unsubscribe();
+            unsubscribe = onSnapshot(chatMessagesQuery, (chatMessagesQuerySnapshot) => {
+                let messagesTmp = [];
+                const chatMessages = [];
+    
+                if(chatMessagesQuerySnapshot?.docs) {
+                    for(const chatMessageDoc of chatMessagesQuerySnapshot.docs) {
+                        let thisChatMessage = chatMessageDoc.data();
+                        thisChatMessage.id = chatMessageDoc.id;
+        
+                        chatMessages.push(thisChatMessage);
+                    }
+                }
+    
+                chatMessages.forEach((chatMessage, index) => {
+                    let messageUser = chatMessage.userId;
+                    let messageUserName;
+                    let messageAvatar;
+    
+                    if (chatMessage.userId == userRecord.id) {
+                        messageUser = 1;
+                        messageUserName = userRecord.name;
+                        messageAvatar = userRecord.profilePictureUrl;
+                    }
+                    else {
+                        messageUser = 2;
+                        messageUserName = chatHeader;
+                        messageAvatar = targetUserAvatarUrl;
+                    }
+    
+                    const message = {
+                        _id: index + 1,
+                        text: chatMessage.messageBody,
+                        createdAt: (chatMessage.createdDate).toDate(),
+                        user: {
+                            _id: messageUser,
+                            name: messageUserName,
+                            avatar: targetUserAvatarUrl,
+                        },
+                    }
+    
+                    messagesTmp.push(message);
+                });
+    
+                setMessages(messagesTmp);
+            });
+        }
+
+        if(unsubscribe) {
+            return () => unsubscribe();
         }
     }, [chatHeader, targetUserAvatarUrl]);
 
