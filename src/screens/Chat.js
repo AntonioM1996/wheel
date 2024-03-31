@@ -1,22 +1,22 @@
 import React, { useEffect, useState, useCallback, useLayoutEffect } from "react";
-import { View, StyleSheet, Button, TextInput } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { GiftedChat, Send } from "react-native-gifted-chat";
 import CustomText from "../components/CustomText";
 import CustomInput from "../components/CustomInput";
-import { PRIMARY_COLOR, CHAT_MESSAGES_QUERY_LIMIT, getChatMessages, FONT_FAMILY, MAX_LATEST_MESSAGE_LENGTH } from "../services/Utils";
+import { PRIMARY_COLOR, CHAT_MESSAGES_QUERY_LIMIT, MAX_LATEST_MESSAGE_LENGTH } from "../services/Utils";
 import { useAuth } from "../hooks/useAuth";
 import { Timestamp, addDoc, collection, onSnapshot, query, orderBy, limit, updateDoc, doc } from "firebase/firestore";
 import { db } from "../config/firebase";
 
-const Chat = ({ route, navigation }) => {
+const Chat = ({ route }) => {
     const { chat } = route.params;
     const { userRecord } = useAuth();
-    const [chatHeader, setChatHeader] = useState();
-    const [targetUserAvatarUrl, setTargetUserAvatarUrl] = useState();
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState('');
+    const chatHeader = userRecord.id != chat.targetUser ? chat.targetUserName : chat.sourceUserName;
+    const targetUserAvatarUrl = userRecord.id != chat.targetUser ? chat.targetUserProfilePicUrl : chat.sourceUserProfilePicUrl;
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         console.log("Chat.chat", chat);
         console.log("userRecord.id", userRecord.id);
         console.log("chatHeader", chatHeader);
@@ -24,74 +24,59 @@ const Chat = ({ route, navigation }) => {
 
         const chatMessagesRef = collection(db, "chats", chat.id, "messages");
         const chatMessagesQuery = query(
-            chatMessagesRef, 
+            chatMessagesRef,
             orderBy('createdDate', 'desc'),
             limit(CHAT_MESSAGES_QUERY_LIMIT)
         );
-        let unsubscribe;
 
-        if (chatHeader == null || targetUserAvatarUrl == null) {
-            if (userRecord.id != chat.targetUser) {
-                setChatHeader(chat.targetUserName);
-                setTargetUserAvatarUrl(chat.targetUserProfilePicUrl);
-            }
-            else if (userRecord.id != chat.sourceUser) {
-                setChatHeader(chat.sourceUserName);
-                setTargetUserAvatarUrl(chat.sourceUserProfilePicUrl);
-            }
-        }
-        else {
-            unsubscribe = onSnapshot(chatMessagesQuery, (chatMessagesQuerySnapshot) => {
-                let messagesTmp = [];
-                const chatMessages = [];
-    
-                if(chatMessagesQuerySnapshot?.docs) {
-                    for(const chatMessageDoc of chatMessagesQuerySnapshot.docs) {
-                        let thisChatMessage = chatMessageDoc.data();
-                        thisChatMessage.id = chatMessageDoc.id;
-        
-                        chatMessages.push(thisChatMessage);
-                    }
+        const unsubscribe = onSnapshot(chatMessagesQuery, (chatMessagesQuerySnapshot) => {
+            let messagesTmp = [];
+            const chatMessages = [];
+
+            if (chatMessagesQuerySnapshot?.docs) {
+                for (const chatMessageDoc of chatMessagesQuerySnapshot.docs) {
+                    let thisChatMessage = chatMessageDoc.data();
+                    thisChatMessage.id = chatMessageDoc.id;
+
+                    chatMessages.push(thisChatMessage);
                 }
-    
-                chatMessages.forEach((chatMessage, index) => {
-                    let messageUser = chatMessage.userId;
-                    let messageUserName;
-                    let messageAvatar;
-    
-                    if (chatMessage.userId == userRecord.id) {
-                        messageUser = 1;
-                        messageUserName = userRecord.name;
-                        messageAvatar = userRecord.profilePictureUrl;
-                    }
-                    else {
-                        messageUser = 2;
-                        messageUserName = chatHeader;
-                        messageAvatar = targetUserAvatarUrl;
-                    }
-    
-                    const message = {
-                        _id: index + 1,
-                        text: chatMessage.messageBody,
-                        createdAt: (chatMessage.createdDate).toDate(),
-                        user: {
-                            _id: messageUser,
-                            name: messageUserName,
-                            avatar: targetUserAvatarUrl,
-                        },
-                    }
-    
-                    messagesTmp.push(message);
-                });
-    
-                setMessages(messagesTmp);
-            });
-        }
+            }
 
-        if(unsubscribe) {
-            return () => unsubscribe();
-        }
-    }, [chatHeader, targetUserAvatarUrl]);
+            chatMessages.forEach((chatMessage, index) => {
+                let messageUser = chatMessage.userId;
+                let messageUserName;
+                let messageAvatar;
+
+                if (chatMessage.userId == userRecord.id) {
+                    messageUser = 1;
+                    messageUserName = userRecord.name;
+                    messageAvatar = userRecord.profilePictureUrl;
+                }
+                else {
+                    messageUser = 2;
+                    messageUserName = chatHeader;
+                    messageAvatar = targetUserAvatarUrl;
+                }
+
+                const message = {
+                    _id: index + 1,
+                    text: chatMessage.messageBody,
+                    createdAt: (chatMessage.createdDate).toDate(),
+                    user: {
+                        _id: messageUser,
+                        name: messageUserName,
+                        avatar: targetUserAvatarUrl,
+                    },
+                }
+
+                messagesTmp.push(message);
+            });
+
+            setMessages(messagesTmp);
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     const onSend = useCallback((messages = []) => {
         setMessageInput('');
@@ -112,7 +97,7 @@ const Chat = ({ route, navigation }) => {
         });
 
         let chatRef = doc(db, "chats", chat.id);
-        
+
         updateDoc(chatRef, {
             "latestMessage": (message.text).length > 50 ? (message.text).substring(0, MAX_LATEST_MESSAGE_LENGTH) + "..." : message.text,
             "latestMessageDate": Timestamp.fromDate(message.createdAt)
