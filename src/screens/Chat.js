@@ -15,14 +15,37 @@ const Chat = ({ route }) => {
     const [messageInput, setMessageInput] = useState('');
     const chatHeader = userRecord.id != chat.targetUser ? chat.targetUserName : chat.sourceUserName;
     const targetUserAvatarUrl = userRecord.id != chat.targetUser ? chat.targetUserProfilePicUrl : chat.sourceUserProfilePicUrl;
+    const chatMessagesRef = collection(db, "chats", chat.id, "messages");
+    const chatRef = doc(db, "chats", chat.id);
+    let firstRender = true;
 
-    useLayoutEffect(() => {
+    useEffect(() => {
         console.log("Chat.chat", chat);
         console.log("userRecord.id", userRecord.id);
         console.log("chatHeader", chatHeader);
         console.log("targetUserAvatarUrl", targetUserAvatarUrl);
 
-        const chatMessagesRef = collection(db, "chats", chat.id, "messages");
+        let updatedChat;
+
+        if (userRecord.id != chat.targetUser) {
+            if (chat.unreadSourceUser) {
+                updatedChat = {
+                    "unreadSourceUser": false
+                }
+            }
+        }
+        else {
+            if (chat.unreadTargetUser) {
+                updatedChat = {
+                    "unreadTargetUser": false
+                }
+            }
+        }
+
+        if (updatedChat) {
+            updateDoc(chatRef, updatedChat);
+        }
+
         const chatMessagesQuery = query(
             chatMessagesRef,
             orderBy('createdDate', 'desc'),
@@ -43,7 +66,7 @@ const Chat = ({ route }) => {
             }
 
             chatMessages.forEach((chatMessage, index) => {
-                let messageUser = chatMessage.userId;
+                let messageUser;
                 let messageUserName;
                 let messageAvatar;
 
@@ -59,7 +82,7 @@ const Chat = ({ route }) => {
                 }
 
                 const message = {
-                    _id: index + 1,
+                    _id: chatMessage.id,
                     text: chatMessage.messageBody,
                     createdAt: (chatMessage.createdDate).toDate(),
                     user: {
@@ -72,7 +95,36 @@ const Chat = ({ route }) => {
                 messagesTmp.push(message);
             });
 
-            setMessages(messagesTmp);
+            if (firstRender) {
+                setMessages(messagesTmp);
+                firstRender = false;
+            }
+            else {
+                console.log("!firstRender");
+                setMessages(previousMessages =>
+                    GiftedChat.append(previousMessages, messagesTmp[0]),
+                );
+
+                if (chatMessages[0].userId != userRecord.id) {
+                    console.log("message from other user");
+                    let updatedChat;
+
+                    if (userRecord.id != chat.targetUser) {
+                        updatedChat = {
+                            "unreadSourceUser": false
+                        }
+                    }
+                    else {
+                        updatedChat = {
+                            "unreadTargetUser": false
+                        }
+                    }
+
+                    if (updatedChat) {
+                        updateDoc(chatRef, updatedChat);
+                    }
+                }
+            }
         });
 
         return () => unsubscribe();
@@ -81,13 +133,13 @@ const Chat = ({ route }) => {
     const onSend = useCallback((messages = []) => {
         setMessageInput('');
 
-        setMessages(previousMessages =>
+        /* setMessages(previousMessages =>
             GiftedChat.append(previousMessages, messages),
-        );
+        ); */
 
         let message = messages[0];
 
-        console.log("messages", messages);
+        console.log("sending messages", messages);
 
         addDoc(collection(db, "chats", chat.id, "messages"), {
             "userId": userRecord.id,
@@ -96,12 +148,23 @@ const Chat = ({ route }) => {
             "createdDate": Timestamp.fromDate(message.createdAt)
         });
 
+        // NO!!! Should let the backend update the other user record, I should not be allowed to do this as another user
+
         let chatRef = doc(db, "chats", chat.id);
 
-        updateDoc(chatRef, {
+        let updatedChat = {
             "latestMessage": (message.text).length > 50 ? (message.text).substring(0, MAX_LATEST_MESSAGE_LENGTH) + "..." : message.text,
             "latestMessageDate": Timestamp.fromDate(message.createdAt)
-        });
+        };
+
+        if (userRecord.id != chat.targetUser) {
+            updatedChat.unreadTargetUser = true;
+        }
+        else {
+            updatedChat.unreadSourceUser = true;
+        }
+
+        updateDoc(chatRef, updatedChat);
     }, [])
 
     const renderInputToolbar = useCallback((props) => {

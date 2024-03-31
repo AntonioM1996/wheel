@@ -92,7 +92,9 @@ export const createChat = async function(sourceUser, targetUser) {
         "latestMessageDate": Timestamp.fromDate(today),
         "latestMessage": DEFAULT_CHAT_MESSAGE,
         "sourceUserName": sourceUser.name,
-        "targetUserName": targetUser.name
+        "targetUserName": targetUser.name,
+        "unreadTargetUser": true,
+        "unreadSourceUser": true
     });
 }
 
