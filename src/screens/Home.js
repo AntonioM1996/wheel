@@ -10,6 +10,7 @@ import { geohashForLocation } from "geofire-common";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, runOnJS } from "react-native-reanimated";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import DrawnUserCard from "./DrawnUserCard";
+import * as Haptics from "expo-haptics";
 
 const Home = ({ navigation }) => {
     const { userRecord } = useAuth();
@@ -27,20 +28,25 @@ const Home = ({ navigation }) => {
             console.log("usersInRange", usersInRange);
 
             if (usersInRange && usersInRange.length > 0) {
+                runOnJS(Haptics.notificationAsync)(Haptics.NotificationFeedbackType.Success);
+
                 const drawnUserTmp = usersInRange[Math.floor(Math.random() * usersInRange.length)];
                 console.log("drawnUserTmp", drawnUserTmp);
                 runOnJS(setDrawnUser)(drawnUserTmp);
+            }
+            else {
+                runOnJS(Haptics.notificationAsync)(Haptics.NotificationFeedbackType.Error);
             }
         }
     }).minDuration(SPIN_DURATION_MS);
 
     const animatedStyles = useAnimatedStyle(() => ({
         transform: [{ scale: withTiming(spinPressed.value ? 1.2 : 1, { duration: SPIN_DURATION_MS }) }],
-        opacity: withTiming(spinPressed.value ? 0.5 : 1, { duration: SPIN_DURATION_MS }, (finished) => { spinPressed.value = false })
+        opacity: withTiming(spinPressed.value ? 0.5 : 1, { duration: SPIN_DURATION_MS })
     }));
 
-    const getUsersToShow = function() {
-        Location.getCurrentPositionAsync({}).then(location => {
+    const getUsersToShow = function () {
+        Location.getLastKnownPositionAsync({}).then(location => {
             console.log("location", location);
 
             if (userRecord && location && location.coords) {
@@ -68,7 +74,7 @@ const Home = ({ navigation }) => {
         });
     };
 
-    const handleDrawnUserCardClose = async function() {
+    const handleDrawnUserCardClose = async function () {
         setDrawnUser(null);
         getUsersToShow();
     };
@@ -122,8 +128,9 @@ const styles = StyleSheet.create({
         fontSize: 25,
         fontWeight: "bold",
         color: PRIMARY_COLOR,
-        marginTop: "16%",
-        marginLeft: 20
+        marginBottom: 0,
+        marginLeft: 20,
+        marginTop: "auto"
     },
     container: {
         flex: 1

@@ -9,6 +9,7 @@ export const IMAGE_QUALITY = 0.1;
 export const SPIN_DURATION_MS = 550;
 export const DEFAULT_CHAT_MESSAGE = 'Say hello!';
 export const CHAT_MESSAGES_QUERY_LIMIT = 200;
+export const MAX_LATEST_MESSAGE_LENGTH = 50;
 
 export const getUsersInRange = async function (center, radiusInM, currentUserId) {
     console.log("excludingId", currentUserId);
@@ -95,7 +96,7 @@ export const createChat = async function(sourceUser, targetUser) {
     });
 }
 
-export const getChats = async function(userId) {
+export const getChats = function(userId) {
     let chats = [];
 
     const chatsRef = collection(db, "chats");
@@ -104,19 +105,23 @@ export const getChats = async function(userId) {
         or(
             where('sourceUser', '==', userId), 
             where('targetUser', '==', userId)
+        ),
+        orderBy(
+            "latestMessageDate",
+            "desc"
         )
     );
 
-    const chatQuerySnapshot = await getDocs(chatQuery);
-
-    if(chatQuerySnapshot?.docs) {
-        for(const chatDoc of chatQuerySnapshot.docs) {
-            let thisChat = chatDoc.data();
-            thisChat.id = chatDoc.id;
-
-            chats.push(thisChat);
+    const unsubscribe = onSnapshot(chatQuery, (chatQuerySnapshot) => {
+        if(chatQuerySnapshot?.docs) {
+            for(const chatDoc of chatQuerySnapshot.docs) {
+                let thisChat = chatDoc.data();
+                thisChat.id = chatDoc.id;
+    
+                chats.push(thisChat);
+            }
         }
-    }
+    });
 
     return chats;
 }

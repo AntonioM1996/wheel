@@ -39,8 +39,9 @@ const styles = StyleSheet.create({
         fontSize: 25,
         fontWeight: "bold",
         color: PRIMARY_COLOR,
-        marginTop: "16%",
-        marginLeft: 20
+        marginBottom: 0,
+        marginLeft: 20,
+        marginTop: "auto"
     },
     container: {
         flex: 1

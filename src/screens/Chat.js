@@ -3,9 +3,9 @@ import { View, StyleSheet, Button, TextInput } from "react-native";
 import { GiftedChat, Send } from "react-native-gifted-chat";
 import CustomText from "../components/CustomText";
 import CustomInput from "../components/CustomInput";
-import { PRIMARY_COLOR, CHAT_MESSAGES_QUERY_LIMIT, getChatMessages, FONT_FAMILY } from "../services/Utils";
+import { PRIMARY_COLOR, CHAT_MESSAGES_QUERY_LIMIT, getChatMessages, FONT_FAMILY, MAX_LATEST_MESSAGE_LENGTH } from "../services/Utils";
 import { useAuth } from "../hooks/useAuth";
-import { Timestamp, addDoc, collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
+import { Timestamp, addDoc, collection, onSnapshot, query, orderBy, limit, updateDoc, doc } from "firebase/firestore";
 import { db } from "../config/firebase";
 
 const Chat = ({ route, navigation }) => {
@@ -107,6 +107,13 @@ const Chat = ({ route, navigation }) => {
             "messageBody": message.text,
             "createdDate": Timestamp.fromDate(message.createdAt)
         });
+
+        let chatRef = doc(db, "chats", chat.id);
+        
+        updateDoc(chatRef, {
+            "latestMessage": (message.text).length > 50 ? (message.text).substring(0, MAX_LATEST_MESSAGE_LENGTH) + "..." : message.text,
+            "latestMessageDate": Timestamp.fromDate(message.createdAt)
+        });
     }, [])
 
     const renderInputToolbar = useCallback((props) => {
@@ -158,8 +165,9 @@ const styles = StyleSheet.create({
         fontSize: 25,
         fontWeight: "bold",
         color: PRIMARY_COLOR,
-        marginTop: "16%",
-        marginLeft: 20
+        marginBottom: 0,
+        marginLeft: 20,
+        marginTop: "auto"
     },
     container: {
         flex: 1,

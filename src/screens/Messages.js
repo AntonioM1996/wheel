@@ -1,25 +1,48 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import { StyleSheet, View, FlatList } from "react-native";
 import { PRIMARY_COLOR, getChats } from "../services/Utils";
 import CustomText from "../components/CustomText";
 import { useAuth } from "../hooks/useAuth";
 import ChatRow from "../components/ChatRow";
 import { useFocusEffect } from "@react-navigation/native";
+import { collection, onSnapshot, query, or, where, orderBy } from "firebase/firestore";
+import { db } from "../config/firebase";
 
 const Messages = ({ navigation }) => {
     const { userRecord } = useAuth();
     const [chats, setChats] = useState();
 
-    useFocusEffect(React.useCallback(() => {
-        const getUserChats = async function() {
-            const chatsTmp = await getChats(userRecord.id);
-            console.log("chatsTmp", chatsTmp);
-    
-            setChats(chatsTmp);
-        };
+    useEffect(() => {
+        const chatsRef = collection(db, "chats");
+        const chatQuery = query(
+            chatsRef, 
+            or(
+                where('sourceUser', '==', userRecord.id), 
+                where('targetUser', '==', userRecord.id)
+            ),
+            orderBy(
+                "latestMessageDate",
+                "desc"
+            )
+        );
 
-        getUserChats();
-    }, []));
+        const unsubscribe = onSnapshot(chatQuery, (chatQuerySnapshot) => {
+            const chats = [];
+
+            if(chatQuerySnapshot?.docs) {
+                for(const chatDoc of chatQuerySnapshot.docs) {
+                    let thisChat = chatDoc.data();
+                    thisChat.id = chatDoc.id;
+        
+                    chats.push(thisChat);
+                }
+            }
+
+            setChats(chats);
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     const handleChatRowPress = function(chat) {
         console.log("handleChatRowPress chat.id", chat.id);
@@ -58,8 +81,9 @@ const styles = StyleSheet.create({
         fontSize: 25,
         fontWeight: "bold",
         color: PRIMARY_COLOR,
-        marginTop: "16%",
-        marginLeft: 20
+        marginBottom: 0,
+        marginLeft: 20,
+        marginTop: "auto"
     },
     container: {
         flex: 1,
