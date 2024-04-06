@@ -94,7 +94,8 @@ export const createChat = async function(sourceUser, targetUser) {
         "sourceUserName": sourceUser.name,
         "targetUserName": targetUser.name,
         "unreadTargetUser": true,
-        "unreadSourceUser": true
+        "unreadSourceUser": true,
+        "status": "P"
     });
 }
 

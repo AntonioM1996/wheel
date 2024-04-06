@@ -106,7 +106,6 @@ const Chat = ({ route }) => {
                 );
 
                 if (chatMessages[0].userId != userRecord.id) {
-                    console.log("message from other user");
                     let updatedChat;
 
                     if (userRecord.id != chat.targetUser) {
@@ -154,7 +153,8 @@ const Chat = ({ route }) => {
 
         let updatedChat = {
             "latestMessage": (message.text).length > 50 ? (message.text).substring(0, MAX_LATEST_MESSAGE_LENGTH) + "..." : message.text,
-            "latestMessageDate": Timestamp.fromDate(message.createdAt)
+            "latestMessageDate": Timestamp.fromDate(message.createdAt),
+            "status": "A"
         };
 
         if (userRecord.id != chat.targetUser) {

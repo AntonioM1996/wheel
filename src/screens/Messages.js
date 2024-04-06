@@ -5,7 +5,7 @@ import CustomText from "../components/CustomText";
 import { useAuth } from "../hooks/useAuth";
 import ChatRow from "../components/ChatRow";
 import { useFocusEffect } from "@react-navigation/native";
-import { collection, onSnapshot, query, or, where, orderBy } from "firebase/firestore";
+import { collection, onSnapshot, query, or, where, orderBy, and } from "firebase/firestore";
 import { db } from "../config/firebase";
 
 const Messages = ({ navigation }) => {
@@ -18,7 +18,10 @@ const Messages = ({ navigation }) => {
             chatsRef, 
             or(
                 where('sourceUser', '==', userRecord.id), 
-                where('targetUser', '==', userRecord.id)
+                and(
+                    where('targetUser', '==', userRecord.id),
+                    where('status', '==', 'A')
+                )
             ),
             orderBy(
                 "latestMessageDate",
