@@ -95,7 +95,9 @@ export const createChat = async function(sourceUser, targetUser) {
         "targetUserName": targetUser.name,
         "unreadTargetUser": true,
         "unreadSourceUser": true,
-        "status": "P"
+        "status": "P",
+        "sourceUserExpoPushToken": sourceUser.expoPushToken,
+        "targetUserExpoPushToken": targetUser.expoPushToken
     });
 }
 
@@ -157,3 +159,33 @@ export const getChatMessages = function(chatId, queryLimit) {
         console.error(error);
     }
 };
+
+export const sendPushNotification = async function(targetExpoPushToken, title, body, data) {
+    console.log("sendPushNotification...");
+    console.log("targetExpoPushToken", targetExpoPushToken);
+    console.log("title", title);
+    console.log("body", body);
+    
+    const message = {
+        to: targetExpoPushToken,
+        sound: 'default',
+        title: title,
+        body: body
+    };
+
+    if(data) {
+        message.data = data;
+    }
+  
+    const response = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Accept-encoding': 'gzip, deflate',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(message),
+    });
+
+    console.log("response.status", response.status);
+}

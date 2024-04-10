@@ -3,7 +3,7 @@ import { View, StyleSheet } from "react-native";
 import { GiftedChat, Send } from "react-native-gifted-chat";
 import CustomText from "../components/CustomText";
 import CustomInput from "../components/CustomInput";
-import { PRIMARY_COLOR, CHAT_MESSAGES_QUERY_LIMIT, MAX_LATEST_MESSAGE_LENGTH } from "../services/Utils";
+import { PRIMARY_COLOR, CHAT_MESSAGES_QUERY_LIMIT, MAX_LATEST_MESSAGE_LENGTH, sendPushNotification } from "../services/Utils";
 import { useAuth } from "../hooks/useAuth";
 import { Timestamp, addDoc, collection, onSnapshot, query, orderBy, limit, updateDoc, doc } from "firebase/firestore";
 import { db } from "../config/firebase";
@@ -149,22 +149,28 @@ const Chat = ({ route }) => {
 
         // NO!!! Should let the backend update the other user record, I should not be allowed to do this as another user
 
+        let targetExpoPushToken;
         let chatRef = doc(db, "chats", chat.id);
+        let truncatedMessage = (message.text).length > 50 ? 
+        (message.text).substring(0, MAX_LATEST_MESSAGE_LENGTH) + "..." : message.text;
 
         let updatedChat = {
-            "latestMessage": (message.text).length > 50 ? (message.text).substring(0, MAX_LATEST_MESSAGE_LENGTH) + "..." : message.text,
+            "latestMessage": truncatedMessage,
             "latestMessageDate": Timestamp.fromDate(message.createdAt),
             "status": "A"
         };
 
         if (userRecord.id != chat.targetUser) {
             updatedChat.unreadTargetUser = true;
+            targetExpoPushToken = chat.targetUserExpoPushToken;
         }
         else {
             updatedChat.unreadSourceUser = true;
+            targetExpoPushToken = chat.sourceUserExpoPushToken;
         }
 
         updateDoc(chatRef, updatedChat);
+        sendPushNotification(targetExpoPushToken, userRecord.name, truncatedMessage, { chatId: chat.id });
     }, [])
 
     const renderInputToolbar = useCallback((props) => {

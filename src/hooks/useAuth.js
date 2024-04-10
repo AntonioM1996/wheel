@@ -1,7 +1,11 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, { createContext, useState, useContext, useEffect, useRef } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, query, where, getDocs, limit } from "firebase/firestore";
+import { collection, query, where, getDocs, limit, updateDoc, doc } from "firebase/firestore";
 import { app, auth, db } from "../config/firebase";
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+import { Platform } from "react-native";
 
 const AuthContext = createContext();
 
@@ -19,8 +23,11 @@ function useProvideAuth() {
     const [user, setUser] = useState();
     const [userRecord, setUserRecord] = useState();
     const [loading, setLoading] = useState(true);
+    const [expoPushToken, setExpoPushToken] = useState();
 
     useEffect(() => {
+        console.log("--- useProvideAuth useEffect ---");
+
         const unsubscribe = onAuthStateChanged(
             auth,
             async authenticatedUser => {
@@ -34,10 +41,31 @@ function useProvideAuth() {
                     getDocs(q).then(results => {
                         console.log("useAuth - getDocs on users");
                         console.log(results.docs[0].data());
+
                         let thisUserRecord = results.docs[0].data();
                         thisUserRecord.id = results.docs[0].id;
+
                         console.log(thisUserRecord);
                         setUserRecord(thisUserRecord);
+
+                        if(!thisUserRecord.expoPushToken) {
+                            console.log("--- SETTING expoPushToken ---");
+
+                            registerForPushNotificationsAsync().then(token => {
+                                console.log("expoPushToken", token);
+
+                                if(token) {
+                                    setExpoPushToken(token);
+
+                                    const userRecordRef = doc(db, "users", thisUserRecord.id);
+                                    const updatedUser = {
+                                        expoPushToken: token
+                                    };
+
+                                    updateDoc(userRecordRef, updatedUser);
+                                }
+                            });
+                        }
                     }).catch(error => {
                         console.error(error);
                     });
@@ -52,7 +80,11 @@ function useProvideAuth() {
             }
         );
 
-        return () => unsubscribe();
+        
+
+        return () => {
+            unsubscribe();
+        }
     }, []);
 
     return {
@@ -60,6 +92,43 @@ function useProvideAuth() {
         userRecord,
         loading
     };
+}
+
+async function registerForPushNotificationsAsync() {
+    let token;
+
+    if (Platform.OS === 'android') {
+        Notifications.setNotificationChannelAsync('default', {
+            name: 'default',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#FF231F7C',
+        });
+    }
+
+    if (Device.isDevice) {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+
+        if (existingStatus !== 'granted') {
+            const { status } = await Notifications.requestPermissionsAsync();
+            finalStatus = status;
+        }
+
+        if (finalStatus !== 'granted') {
+            alert('Failed to get push token for push notification!');
+            return;
+        }
+
+        token = await Notifications.getExpoPushTokenAsync({
+            projectId: Constants.expoConfig.extra.eas.projectId,
+        });
+    }
+    else {
+        alert('Must use physical device for Push Notifications');
+    }
+
+    return token?.data;
 }
 
 export const useAuth = () => {
