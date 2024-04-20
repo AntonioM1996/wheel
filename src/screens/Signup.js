@@ -5,11 +5,11 @@ import { doc, addDoc, collection, arrayUnion } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { createUserWithEmailAndPassword, getAuth, sendEmailVerification, updateProfile } from "firebase/auth";
 import CustomText from "../components/CustomText";
-import CustomInput from "../components/CustomInput";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import BackgroundImage from "../../assets/app_background.jpg";
 import * as Utils from "../services/Utils";
 import * as ImagePicker from 'expo-image-picker';
+import IconButton from "../components/IconButton";
 
 const Signup = ({ navigation }) => {
     const [username, setUsername] = useState();
@@ -44,13 +44,13 @@ const Signup = ({ navigation }) => {
                                 "firstName": firstName,
                                 "lastName": lastName,
                                 "name": firstName + " " + lastName,
-                                "profilePictureUrl": downloadURL
+                                "profilePictureUrl": downloadURL,
+                                "email": username
                             });
 
                             addDoc(collection(db, "images"), {
                                 "userId": userCredential.user.uid,
-                                "imageUrl": downloadURL,
-                                "isProfilePicture": true
+                                "imageUrl": downloadURL
                             });
 
                             navigation.navigate("Login");
@@ -126,7 +126,9 @@ const Signup = ({ navigation }) => {
                             <View>
                                 <Ionicons style={styles.profileIcon} name="person-circle-outline" size={130} color={Utils.PRIMARY_COLOR}
                                     onPress={handleProfilePicturePress} />
-                                <Ionicons style={styles.addIcon} name="add-circle-outline" size={30} color={Utils.PRIMARY_COLOR} />
+                                <View style={styles.editPictureButton}>
+                                    <IconButton iconName="images-outline" color="white" size="small" />
+                                </View>
                             </View>
                         }
                     </View>
@@ -297,9 +299,9 @@ const styles = StyleSheet.create({
     profilePictureContainer: {
         marginBottom: 10
     },
-    addIcon: {
+    editPictureButton: {
         alignSelf: "flex-end",
-        bottom: 32,
+        bottom: 40,
         right: 10
     }
 });
