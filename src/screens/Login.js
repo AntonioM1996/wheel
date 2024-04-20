@@ -3,7 +3,6 @@ import { View, Alert, StyleSheet, ImageBackground, TextInput, TouchableOpacity, 
 import { auth } from "../config/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import CustomText from "../components/CustomText";
-import CustomInput from "../components/CustomInput";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import BackgroundImage from "../../assets/app_background.jpg";
 import { PRIMARY_COLOR, FONT_FAMILY } from "../services/Utils";

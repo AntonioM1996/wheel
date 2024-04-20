@@ -2,7 +2,8 @@ import React from "react";
 import { View, Text, TextInput, StyleSheet } from "react-native";
 import { FONT_FAMILY } from "../services/Utils";
 
-const CustomInput = ({value, setValue, placeholder, secureTextEntry, autoCapitalize, error, style, multiline = false}) => {
+const CustomInput = ({value, setValue, placeholder, secureTextEntry, autoCapitalize, error, style, multiline = false, 
+    editable = true}) => {
     return (
         <View style={[error == true ? styles.errorContainer : styles.container, style]}>
             <TextInput 
@@ -13,6 +14,7 @@ const CustomInput = ({value, setValue, placeholder, secureTextEntry, autoCapital
                 secureTextEntry={secureTextEntry} 
                 autoCapitalize={autoCapitalize}
                 multiline={multiline}
+                editable={editable}
             />
         </View>
     );

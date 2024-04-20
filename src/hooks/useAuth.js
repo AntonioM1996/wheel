@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, query, where, getDocs, limit, updateDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, limit, updateDoc, doc, onSnapshot } from "firebase/firestore";
 import { app, auth, db } from "../config/firebase";
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
@@ -38,12 +38,12 @@ function useProvideAuth() {
 
                     const q = query(collection(db, "users"), where("userId", "==", authenticatedUser.uid), limit(1));
 
-                    getDocs(q).then(results => {
+                    const unsubscribe = onSnapshot(q, (userQuerySnapshot) => {
                         console.log("useAuth - getDocs on users");
-                        console.log(results.docs[0].data());
+                        console.log(userQuerySnapshot.docs[0].data());
 
-                        let thisUserRecord = results.docs[0].data();
-                        thisUserRecord.id = results.docs[0].id;
+                        let thisUserRecord = userQuerySnapshot.docs[0].data();
+                        thisUserRecord.id = userQuerySnapshot.docs[0].id;
 
                         console.log(thisUserRecord);
                         setUserRecord(thisUserRecord);
@@ -66,9 +66,9 @@ function useProvideAuth() {
                                 }
                             });
                         }
-                    }).catch(error => {
-                        console.error(error);
                     });
+
+                    return () => unsubscribe();
                 }
                 else {
                     auth.signOut();
