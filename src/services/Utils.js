@@ -11,8 +11,6 @@ export const DEFAULT_CHAT_MESSAGE = 'Say hello!';
 export const CHAT_MESSAGES_QUERY_LIMIT = 200;
 export const MAX_LATEST_MESSAGE_LENGTH = 50;
 
-// TEST
-
 export const getUsersInRange = async function (center, radiusInM, currentUserId) {
     console.log("excludingId", currentUserId);
     // Each item in 'bounds' represents a startAt/endAt pair. We have to issue
